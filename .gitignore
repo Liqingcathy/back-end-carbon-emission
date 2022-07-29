@@ -1,0 +1,8 @@
+#extra things
+**.pyc
+**/.DS_Store
+venv/
+
+#secret files
+.env
+http_ca.crt
