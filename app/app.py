@@ -1,3 +1,4 @@
+from werkzeug.wrappers.json import JSONMixin
 from flask import Flask, Blueprint, request, jsonify, make_response
 import os
 from dotenv import load_dotenv
@@ -12,12 +13,14 @@ app = Flask(__name__)
 # header for carbon api
 HEADER = {'Authorization': f'Bearer {carbon_key}',
           'Content-Type': 'application/json'
-        }
+          }
 
 VEHICLE_MAKE_RES = {}
 VEHICLE_MODEL_RES = {}
 USER_INPUT = {}
+SEARCH_KW = None
 # get model id to request estimation result
+
 
 @ car_bp.route('/vehicle_makes/<id>/vehicle_models', methods=['GET'])
 def get_vehicle_model_id(id):
@@ -41,7 +44,7 @@ def get_vehicle_model_id(id):
 @ car_bp.route('/estimate', methods=['POST', 'GET'])
 def create_estimated_val():
     print('estimate post request')
-    
+
     # list_makes = get_vehicle_makes()
     list_makes = (requests.get(
         'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
@@ -68,16 +71,17 @@ def create_estimated_val():
     return response.json(), 201
 
 
+@ app.route('/vehicles', methods=['POST'])
+def get_search_words():
+    print('try get event keyword')
+    SEARCH_KW = requests.get('https://api.github.com/events')
+    print(SEARCH_KW)
+    response = requests.post(
+        'http://127.0.0.1:9000/user/search-dsl', json=SEARCH_KW)
+    return response.json(), 201
 
 
-@ app.route('/')
-def home():
-    return "Welcome"
 
-# def create_app(test_config=None):
-#     app = Flask(__name__)
-
-#     return app
 
 
 if __name__ == '__main__':
