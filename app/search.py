@@ -2,6 +2,7 @@ from ctypes import resize
 from datetime import date, datetime
 import itertools
 import ssl
+from attr import fields
 from flask import Flask, Blueprint, jsonify
 from requests import request
 import requests
@@ -66,14 +67,43 @@ def create_spider_index():
 @search_bp.route('/green_vehicle/<kw>', methods=['GET'])
 def search_word(kw):
     print(f"kw {kw}")
+    
+    body = {
+            "query": {
+                "query_string": {
+                    "fields": [
+                        "title", "content"
+                    ],
+                    "query": kw
+                }
+            },
+            "highlight": {
+                "pre_tags": ["<em>"],
+                "post_tags": ["</em>"],
+                "fields": {
+                    "title": {
+                        "fragment_size": 400,
+                        "number_of_fragments": 2,
+                        "no_match_size": 20
+                    },
+                    "content": {
+                        "fragment_size": 400,
+                        "number_of_fragments": 2,
+                        "no_match_size": 20
+                    }
+                }
+            }
+        }
+    
     # q = Search(using=es,  index='epa_info').query("match", content=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
     #keword query matches title or content or url
-    q = Search(using=es,  index='epa_info').query("multi_match", query=kw, fields=['content', 'title', 'url'])
+    q = es.search(index='epa_info', body=body)
+    #q = Search(using=es,  index='epa_info').query("multi_match", query=kw, fields=['content', 'title', 'url'])
     #underhood query: {'query': {'match': {'title': keyword}}}
     # q = q.highlight('title').highlight('content')
-    print(q.to_dict())  # serialize Search object to dict to display in console
-    res = q.execute()  
-    all_hits = res['hits']['hits']
+    # print(q)  # serialize Search object to dict to display in console
+    # res = q.execute()  
+    all_hits = q['hits']['hits']
     print(f"search res_match_hit_length {len(all_hits)}")
     # _highlights = all_hits[1].meta.title
     
@@ -85,4 +115,4 @@ def search_word(kw):
 
     #     print('\n\n')
     # print(res.to_dict())
-    return (res.to_dict())
+    return (q)
