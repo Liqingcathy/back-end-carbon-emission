@@ -1,4 +1,6 @@
+from ctypes import resize
 from datetime import date, datetime
+import itertools
 import ssl
 from flask import Flask, Blueprint, jsonify
 from requests import request
@@ -64,13 +66,17 @@ def create_spider_index():
 @search_bp.route('/green_vehicle/<kw>', methods=['GET'])
 def search_word(kw):
     print(f"kw {kw}")
-    q = Search(using=es,  index='epa_info').query("match", content=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
+    # q = Search(using=es,  index='epa_info').query("match", content=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
+    #keword query matches title or content or url
+    q = Search(using=es,  index='epa_info').query("multi_match", query=kw, fields=['content', 'title', 'url'])
     #underhood query: {'query': {'match': {'title': keyword}}}
+    # q = q.highlight('title').highlight('content')
     print(q.to_dict())  # serialize Search object to dict to display in console
     res = q.execute()  
-    
     all_hits = res['hits']['hits']
     print(f"search res_match_hit_length {len(all_hits)}")
+    # _highlights = all_hits[1].meta.title
+    
     # request_body = all_hits
     # for num, doc in enumerate(all_hits):
     #     #print("DOC ID:", doc["_id"], "---->", doc, type(doc), '\n')
