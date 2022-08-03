@@ -6,33 +6,34 @@ import requests
 from bs4 import BeautifulSoup, Comment
 import urllib.request
 from elasticsearch_dsl import Search
-from elastic import es
+from .elastic import es
 from elasticsearch.helpers import bulk
 import re
 
 search_bp = Blueprint("search_bp", __name__)
 
+#filter necessary text
 def necessary_text(element):
-    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'li', 'a', 'h1', 'h2', 'link']:
+    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'a', 'h1', 'h2', 'link']:
         return False
     if isinstance(element, Comment):
         return False
     if re.match(r"[\n]+",str(element)): return False
     return True
 
-def spider():
+def web_spider():
     response = requests.get(url='https://www.epa.gov/greenvehicles')
     response.encoding = 'GBK'
     soup_obj = BeautifulSoup(response.text, 'html.parser')
 
     records, all_li , text_res = [], [], []
-    #pull all text from the class container
+    #pull all text from the specific class container
     all_divs = soup_obj.find_all(name='div', class_='l-grid l-grid--3-col')
     for div in all_divs:
         if not div.find(name='section', class_='usa-banner'):
             all_li += div.find_all(name='li')
 
-  
+    #from each title, parse each article from that link
     for li in all_li:
         title = li.find(name='a').get_text()
         a_tag = 'https://www.epa.gov' + li.find('a').get('href')
@@ -44,37 +45,26 @@ def spider():
         text = text.lstrip().rstrip()
         
         records.append({title: a_tag})
-        text_res.append({title: text})
+        text_res.append({'title': title, 'url' : a_tag, 'content': text})
     # print(text_res)
     # exit()
     return text_res
 
-print(spider())
+# print(spider())
 
+#create epa_info index and bulk save all title/url/content to elasticsearch db 
 @search_bp.route('/green_vehicle', methods=['PUT'])
 def create_spider_index():
-    titles_url = spider()
-    
-    data_list = []
-    for dict_ele in titles_url:
-        for key, val in dict_ele.items():
-            if key not in dict_ele:
-                data_list.append({
-                    "title": key,
-                    "url": val
-                })
-    # print(body)
-    # res = es.index(index='epa_info', document=data_list)
+    data_list = web_spider()
     res = bulk(es, data_list, index='epa_info')
     # bulk save list of JSON dict type fields to es db
-
     return jsonify(res[1])
 
-# 因为db里没有保存/显示 fields， 所以search query kw结果没有结果 debug
+#get request to server from db to return search query match from each content
 @search_bp.route('/green_vehicle/<kw>', methods=['GET'])
 def search_word(kw):
     print(f"kw {kw}")
-    q = Search(using=es,  index='epa_info').query("match", title=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
+    q = Search(using=es,  index='epa_info').query("match", content=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
     #underhood query: {'query': {'match': {'title': keyword}}}
     print(q.to_dict())  # serialize Search object to dict to display in console
     res = q.execute()  
@@ -88,5 +78,5 @@ def search_word(kw):
     #         print(key, "-->", value)
 
     #     print('\n\n')
-    print(res.to_dict())
+    # print(res.to_dict())
     return (res.to_dict())
