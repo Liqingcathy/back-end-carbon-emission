@@ -1,8 +1,6 @@
-from ctypes import resize
-from datetime import date, datetime
-import itertools
 import ssl
-from attr import fields
+from asyncio.log import logger
+from elasticsearch import Elasticsearch, TransportError
 from flask import Flask, Blueprint, jsonify
 from requests import request
 import requests
@@ -12,9 +10,10 @@ from elasticsearch_dsl import Search
 from .elastic import es
 from elasticsearch.helpers import bulk
 import re
+import os
+
 
 search_bp = Blueprint("search_bp", __name__)
-
 #filter necessary text
 def necessary_text(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'a', 'h1', 'h2', 'link']:
@@ -59,7 +58,8 @@ def web_spider():
 @search_bp.route('/green_vehicle', methods=['PUT'])
 def create_spider_index():
     data_list = web_spider()
-    res = bulk(es, data_list, index='epa_info')
+    if not es.indices.exists(index='epa_info'):
+        res = bulk(es, data_list, index='epa_info')
     # bulk save list of JSON dict type fields to es db
     return jsonify(res[1])
 

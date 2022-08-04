@@ -1,5 +1,6 @@
 from werkzeug.wrappers.json import JSONMixin
-from flask import Flask, Blueprint, request, jsonify, make_response
+from flask import Flask, Blueprint, request, jsonify, make_response, session
+from flask_session import Session
 import os
 from dotenv import load_dotenv
 import requests
@@ -10,18 +11,12 @@ car_bp = Blueprint("car_bp", __name__)
 carbon_key = os.environ.get("CARBON_INTF_API_KEY")
 
 app = Flask(__name__)
+
 # header for carbon api
 HEADER = {'Authorization': f'Bearer {carbon_key}',
-          'Content-Type': 'application/json'
-          }
+          'Content-Type': 'application/json'}
 
-VEHICLE_MAKE_RES = {}
-VEHICLE_MODEL_RES = {}
-USER_INPUT = {}
-SEARCH_KW = None
 # get model id to request estimation result
-
-
 @ car_bp.route('/vehicle_makes/<id>/vehicle_models', methods=['GET'])
 def get_vehicle_model_id(id):
     '''data: vehicle_model_id,vehicle_model_name, vehicle_brand_name(limited to 4), year '''
@@ -39,8 +34,6 @@ def get_vehicle_model_id(id):
     return vehicle_model_id
 
 # calls from frontend to create user's estimation result
-
-
 @ car_bp.route('/estimate', methods=['POST', 'GET'])
 def create_estimated_val():
     print('estimate post request')
@@ -48,7 +41,6 @@ def create_estimated_val():
     # list_makes = get_vehicle_makes()
     list_makes = (requests.get(
         'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
-    VEHICLE_MAKE_RES = list_makes
 
     request_body = request.get_json()
     vehicle_make_id = None
@@ -63,27 +55,14 @@ def create_estimated_val():
 
     request_body['vehicle_model_id'] = vehicle_model_id
     print(f"ready to post request {request_body}")
-    USER_INPUT = request_body
 
     response = requests.post(
         'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body)
-    VEHICLE_MODEL_RES = response.json()
     return response.json(), 201
-
-
-@ app.route('/vehicles', methods=['POST'])
-def get_search_words():
-    print('try get event keyword')
-    SEARCH_KW = requests.get('https://api.github.com/events')
-    print(SEARCH_KW)
-    response = requests.post(
-        'http://127.0.0.1:9000/user/search-dsl', json=SEARCH_KW)
-    return response.json(), 201
-
-
 
 
 
 if __name__ == '__main__':
-
-    app.run(port=9000, debug=True)
+    
+    app.run(port=5000, debug=True)
+    # app.run(host='0.0.0.0', port=5000, debug=True)
