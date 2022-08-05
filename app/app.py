@@ -74,8 +74,8 @@ def create_estimated_val():
 def hello():
     return 'Welcome to Carbon emission server'
 
-
-if __name__ == '__main__':
+app.run()    
+# if __name__ == '__main__':
     
-    app.run(port=5000, debug=True)
+    # app.run(port=5000, debug=True)
     # app.run(host='0.0.0.0', port=5000, debug=True)
