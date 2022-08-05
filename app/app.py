@@ -69,7 +69,7 @@ def create_estimated_val():
     return response.json(), 201
 
 @app.route('/')
-def hello_world():
+def app():
     return 'Welcome to Carbon emission server'
 
 
