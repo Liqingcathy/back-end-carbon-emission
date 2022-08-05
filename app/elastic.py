@@ -1,37 +1,24 @@
-from asyncio.log import logger
-import json
-from elasticsearch import Elasticsearch, TransportError, ElasticsearchException
-from elasticsearch.helpers import bulk
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.query import MultiMatch, Match
+from datetime import datetime
 from flask import Flask, Blueprint, jsonify
-from requests import request, session
-import os
+from elasticsearch import Elasticsearch
+from elasticsearch_dsl import Search
+from elasticsearch.helpers import bulk
+from elasticsearch_dsl.query import MultiMatch, Match
 import csv
+import json
 
-
-# try:
-#     # initialize elasticsearch modules and get connection
-#     es = Elasticsearch("https://localhost:9200",
-#                        ca_certs=False,
-#                        verify_certs=False,
-#                        #ca_certs= os.environ.get('ES_CERT'),
-#                        http_auth=(os.environ.get('ES_USER'), os.environ.get('ES_PW')))
-# except (Exception, TransportError) as exception:
-#     logger.info("Error in connecting to ES cluster: {}".format(exception))
 
 with open('config.json') as json_data_file:
     config = json.load(json_data_file)
     
 es = Elasticsearch(
-    # cloud_id='CLOUD_ID',
-    # basic_auth=("elastic", 'ELASTIC_PASSWORD')
     cloud_id = config['elasticsearch']['cloud_id'],
     api_key=(config['elasticsearch']['api_key'], config['elasticsearch']['api_key_secret'])
 )
 es.info()
-es_bp = Blueprint("es_bp", __name__)
 
+
+es_bp = Blueprint("es_bp", __name__)
 
 #save user's input
 @es_bp.route('/user/<kw>', methods=['GET'])
