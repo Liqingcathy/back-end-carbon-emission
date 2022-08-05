@@ -5,7 +5,6 @@ from flask_cors import CORS
 def create_app(test_config=None):
 
     app = Flask(__name__)
-
     
     from .app import car_bp
     from .elastic import es_bp
