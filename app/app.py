@@ -66,20 +66,23 @@ def create_estimated_val():
 
     response = requests.post(
         'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body)
-    print(f"response {response.json()['data']['attributes']['carbon_g']}")
+    if response:
+        print(f"response {response.json()['data']['attributes']['carbon_g']}")
 
-    request_body['emission'] = response.json(
-    )['data']['attributes']['carbon_g']
-    print(f"ready to store in es db {request_body}")
+        request_body['emission'] = response.json(
+        )['data']['attributes']['carbon_g']
+        request_body['emission_per_mile'] = (
+            int(request_body['emission']) // int(request_body['distance_value']))
+        print(f"ready to store in es db {request_body}")
 
-    verify_name = request_body['user_name']
-    # verify duplication of user name before creating new record
-    res = es.search(index='user_input', body=json.dumps(
-        {"query": {"match_phrase": {"user_name": verify_name}}})) #exact search
+        verify_name = request_body['user_name']
+        # verify duplication of user name before creating new record
+        res = es.search(index='user_input', body=json.dumps(
+            {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
 
-    if len(res['hits']['hits']) == 0:
-        print("create id when not exists")
-        es.index(index='user_input', body=request_body)
+        if len(res['hits']['hits']) == 0:
+            print("create id when not exists")
+            es.index(index='user_input', body=request_body)
 
     return response.json(), 201
 
