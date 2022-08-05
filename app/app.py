@@ -1,8 +1,8 @@
-from werkzeug.wrappers.json import JSONMixin
-from flask import Flask, Blueprint, request, jsonify, make_response, session
-from flask_session import Session
+from elasticsearch_dsl import Search
+from flask import Flask, Blueprint, request, jsonify, make_response
 import os
 from dotenv import load_dotenv
+from .elastic import es
 import requests
 load_dotenv()
 
@@ -24,9 +24,10 @@ def get_vehicle_model_id(id):
     vehicle_model_id = None
     url = f"https://www.carboninterface.com/api/v1/vehicle_makes/{id}/vehicle_models"
     model_list = requests.get(url, headers=HEADER).json()
-
+    print(len(model_list))
     for i in range(len(model_list)):
         # print(f"model_list[i] {model_list[i]}")
+        #es.index(index='same_make_models', document=model_list[i])
         for val in model_list[i].values():
             vehicle_model_id = val['id']
             # print(vehicle_model_id)
@@ -54,6 +55,13 @@ def create_estimated_val():
     vehicle_model_id = get_vehicle_model_id(vehicle_make_id)
 
     request_body['vehicle_model_id'] = vehicle_model_id
+
+    #verify duplication of user name before creating new record
+    res = es.search(index='user_input', query={"match": {"user_name" : request_body['user_name']}})
+    # print(f" res {res}")
+    if len(res['hits']['hits']) == 0:
+        print("create id when not exists")
+        es.index(index='user_input', body=request_body)
     print(f"ready to post request {request_body}")
 
     response = requests.post(

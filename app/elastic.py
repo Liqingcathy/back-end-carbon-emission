@@ -1,55 +1,53 @@
 from asyncio.log import logger
+import json
 from elasticsearch import Elasticsearch, TransportError, ElasticsearchException
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import MultiMatch, Match
 from flask import Flask, Blueprint, jsonify
 from requests import request, session
-from .app import USER_INPUT, VEHICLE_MODEL_RES
 import os
 import csv
 
-# initialize elasticsearch modules and get connection(reset password)
-try:
-    es = Elasticsearch("https://localhost:9200",
-                       ca_certs=False,
-                       verify_certs=False,
-                       #ca_certs= os.environ.get('ES_CERT'),
-                       http_auth=(os.environ.get('ES_USER'), os.environ.get('ES_PW')))
-except (Exception, TransportError) as exception:
-    logger.info("Error in connecting to ES cluster: {}".format(exception))
 
+# try:
+#     # initialize elasticsearch modules and get connection
+#     es = Elasticsearch("https://localhost:9200",
+#                        ca_certs=False,
+#                        verify_certs=False,
+#                        #ca_certs= os.environ.get('ES_CERT'),
+#                        http_auth=(os.environ.get('ES_USER'), os.environ.get('ES_PW')))
+# except (Exception, TransportError) as exception:
+#     logger.info("Error in connecting to ES cluster: {}".format(exception))
+
+with open('config.json') as json_data_file:
+    config = json.load(json_data_file)
+    
+es = Elasticsearch(
+    # cloud_id='CLOUD_ID',
+    # basic_auth=("elastic", 'ELASTIC_PASSWORD')
+    cloud_id = config['elasticsearch']['cloud_id'],
+    api_key=(config['elasticsearch']['api_key'], config['elasticsearch']['api_key_secret'])
+)
+es.info()
 es_bp = Blueprint("es_bp", __name__)
 
-#save user's input
-@es_bp.route('/user', methods=['GET'])
-def create_user_input_index():
-    # body={
-    #     "mappings" : {
-    #     "properties" : {
-    #         "user name" : USER_INPUT['user_name'],
-    #         "vehicle make" : USER_INPUT['brand_name'], 
-    #         "vehicle model" : USER_INPUT['model_name'],
-    #         "driving frequency" : USER_INPUT['frequency']
-    #        }
-    #     }
-    # }
-    if not es.indices.exists(index='user_input'):
-        res = es.index(index='user_input', document=session)
-        print(res)
-  
 
-    return jsonify(res)
+#save user's input
+@es_bp.route('/user/<kw>', methods=['GET'])
+def search_user_input(kw):
+    # res = es.search(es, index='user_input',  query=kw)
+    res = Search(using=es,  index='user_input').query("multi_match", query=kw, fields=['brand_name', 'model_name', 'user_name'])
+    print(type(res))
+    return jsonify(res.to_dict())
 
 #save user's model response
 #@es_bp.route('/user/models', methods=['GET'])
 def create_user_models_index():
     if not es.indices.exists(index='user_models'):
-        res = es.index(index='user_models', document=VEHICLE_MODEL_RES)
+        res = es.index(index='user_models', document={})
     print(res)
     return jsonify(res)
-
-#
 
 # retrieve model info based user's model info:
 ##FRONT-END 1: display same makes different models emission estimation comparision
@@ -57,24 +55,23 @@ def create_user_models_index():
 def search_user_model(kw):
     print("inside of search user keyword '\n")
     # hits hits _source model name = keyword
-    q = Search(using=es,  index='user_models').query("multi_match", query=kw, fields=['vehicle_make', 'name', 'year'])  # can do more .agg
-    q = es.search(es, index='user_models', query=kw)
+    q = Search(using=es,  index='same_make_models').query("multi_match", query=kw, fields=['data.attributes.vehicle_make', 'data.attributes.name', 'data.attributes.year'])  # can do more .agg
+    #q = es.search(es, index='same_make_models', name=kw)
     # serialize Search object to dict to display in console
     print(q.to_dict())  # {'query': {'match': {'title': keyword}}}
-
     res = q.execute()  # to send request to elasticsearch
     print(f"total hit {res.hits.total.value} \n")
-    car_list = []
-    if res:
-        for hit in res:
-            car_list.append(hit.to_dict())
-            print(hit.to_dict())
-    print(f"\ncar list {car_list}\n")
+    # car_list = []
+    # if res:
+    #     for hit in res:
+    #         car_list.append(hit.to_dict())
+    #         print(hit.to_dict())
+    # print(f"\ncar list {car_list}\n")
 
-    list_model_based_on_user_make = []
+    # list_model_based_on_user_make = []
     #add list of models into the list and request emission post request together
-    
-    return jsonify(car_list, 201)
+    print(type(res))
+    return jsonify(res['hits'], 201)
 
 # #create fuel_economy index for later search
 # @es_bp.route('/user/models/mpg', methods=['GET'])
