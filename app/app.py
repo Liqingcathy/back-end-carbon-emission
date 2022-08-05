@@ -2,15 +2,17 @@ from elasticsearch_dsl import Search
 from flask import Flask, Blueprint, request, jsonify, make_response
 import os
 from dotenv import load_dotenv
+from app import create_app
 from .elastic import es
 import requests
+
 load_dotenv()
 
 
 car_bp = Blueprint("car_bp", __name__)
 carbon_key = os.environ.get("CARBON_INTF_API_KEY")
 
-app = Flask(__name__)
+app = create_app()
 
 # header for carbon api
 HEADER = {'Authorization': f'Bearer {carbon_key}',
@@ -68,9 +70,9 @@ def create_estimated_val():
         'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body)
     return response.json(), 201
 
-@app.route('/')
-def app():
-    return 'Welcome to Carbon emission server'
+# @app.route('/')
+# def app():
+#     return 'Welcome to Carbon emission server'
 
 
 if __name__ == '__main__':
