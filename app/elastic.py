@@ -1,6 +1,8 @@
 from datetime import datetime
+import os
+import certifi
 from flask import Flask, Blueprint, jsonify
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch_dsl import Search
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl.query import MultiMatch, Match
@@ -16,7 +18,16 @@ es = Elasticsearch(
     api_key=(config['elasticsearch']['api_key'],
              config['elasticsearch']['api_key_secret'])
 )
-es.info()
+# es = Elasticsearch(
+#     "https://carbon-emission.es.us-west-2.aws.found.io:9200",
+#     # cloud_id='CLOUD_ID',
+#     auth=os.environ.get('CLOUD_API_KEY', 'CLOUD_KEY_SECRET'),
+#     # verify_certs=False
+#     use_ssl=True,
+#     verify_certs=True,
+#     connection_class=RequestsHttpConnection
+# )
+# print(es.info())
 
 
 es_bp = Blueprint("es_bp", __name__)

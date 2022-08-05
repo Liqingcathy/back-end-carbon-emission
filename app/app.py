@@ -1,5 +1,6 @@
 
 import json
+from time import time
 from flask import Flask, Blueprint, request, jsonify, make_response
 import os
 from dotenv import load_dotenv
@@ -26,19 +27,21 @@ HEADER = {'Authorization': f'Bearer {carbon_key}',
 def get_vehicle_model_id(id):
     '''data: vehicle_model_id,vehicle_model_name, vehicle_brand_name(limited to 4), year '''
     print('inside get model id func')
-    vehicle_model_id = None
     url = f"https://www.carboninterface.com/api/v1/vehicle_makes/{id}/vehicle_models"
     model_list = requests.get(url, headers=HEADER).json()
+
     print(len(model_list))
-    for i in range(len(model_list)):
-        # print(f"model_list[i] {model_list[i]}")
-        #es.index(index='same_make_models', document=model_list[i])
-        for val in model_list[i].values():
-            vehicle_model_id = val['id']
-            # print(vehicle_model_id)
+    # for i in range(len(model_list)):
+    #     # print(f"model_list[i] {model_list[i]}")
+    #     #es.index(index='same_make_models', document=model_list[i])
+    #     for val in model_list[i].values():
 
-    return vehicle_model_id
+    #         vehicle_model_id = val['id']
+    #         #vecicle_name = val['name']
+    #         print(f'model and id match? {vehicle_model_id}')
 
+    # return vehicle_model_id
+    return model_list
 # calls from frontend to create user's estimation result
 
 
@@ -49,7 +52,6 @@ def create_estimated_val():
     # list_makes = get_vehicle_makes()
     list_makes = (requests.get(
         'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
-
     request_body = request.get_json()
     vehicle_make_id = None
     # get vehicle make id by calling api func
@@ -59,15 +61,26 @@ def create_estimated_val():
                 vehicle_make_id = val['id']
 
     vehicle_model_id = None
-    vehicle_model_id = get_vehicle_model_id(vehicle_make_id)
+    print(request_body)
+    vehicle_model_list = get_vehicle_model_id(vehicle_make_id)
+    for i in range(len(vehicle_model_list)):
+        for val in vehicle_model_list[i].values():
+            if val['attributes']['name'] == request_body['model_name']:
+                if int(val['attributes']['year']) == int(request_body['year']):
+                    vehicle_model_id = val['id']
+                    break
+                    #vehicle_name = val['attributes']['name']
+                    #print(f'model and id match? {vehicle_model_id} {vehicle_name}')
 
+    print(f"vehicle_model_id {vehicle_model_id}")
     request_body['vehicle_model_id'] = vehicle_model_id
-    print(f"ready to post request {request_body}")
 
     response = requests.post(
         'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body)
+
     if response:
-        print(f"response {response.json()['data']['attributes']['carbon_g']}")
+        print(
+            f"response {response.json()['data']['attributes']['carbon_g']}")
 
         request_body['emission'] = response.json(
         )['data']['attributes']['carbon_g']
@@ -77,13 +90,13 @@ def create_estimated_val():
 
         verify_name = request_body['user_name']
         # verify duplication of user name before creating new record
-        res = es.search(index='user_input', body=json.dumps(
-            {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
+        # res = es.search(index='user_input', body=json.dumps(
+        #     {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
 
-        if len(res['hits']['hits']) == 0:
-            print("create id when not exists")
-            es.index(index='user_input', body=request_body)
-
+        # if len(res['hits']['hits']) == 0:
+        #     print("create id when not exists")
+        #     es.index(index='user_input', body=request_body)
+    print(response.json())
     return response.json(), 201
 
 
