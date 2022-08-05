@@ -68,6 +68,9 @@ def create_estimated_val():
         'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body)
     return response.json(), 201
 
+@app.route('/')
+def hello_world():
+    return 'Welcome to Carbon emission server'
 
 
 if __name__ == '__main__':
