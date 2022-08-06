@@ -31,16 +31,6 @@ def get_vehicle_model_id(id):
     model_list = requests.get(url, headers=HEADER).json()
 
     print(len(model_list))
-    # for i in range(len(model_list)):
-    #     # print(f"model_list[i] {model_list[i]}")
-    #     #es.index(index='same_make_models', document=model_list[i])
-    #     for val in model_list[i].values():
-
-    #         vehicle_model_id = val['id']
-    #         #vecicle_name = val['name']
-    #         print(f'model and id match? {vehicle_model_id}')
-
-    # return vehicle_model_id
     return model_list
 # calls from frontend to create user's estimation result
 
@@ -89,13 +79,13 @@ def create_estimated_val():
         print(f"ready to store in es db {request_body}")
 
         verify_name = request_body['user_name']
-        # verify duplication of user name before creating new record
-        # res = es.search(index='user_input', body=json.dumps(
-        #     {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
+        #verify duplication of user name before creating new record
+        res = es.search(index='user_input', body=json.dumps(
+            {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
 
-        # if len(res['hits']['hits']) == 0:
-        #     print("create id when not exists")
-        #     es.index(index='user_input', body=request_body)
+        if len(res['hits']['hits']) == 0:
+            print("create id when not exists")
+            es.index(index='user_input', body=request_body)
     print(response.json())
     return response.json(), 201
 
