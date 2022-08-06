@@ -4,7 +4,8 @@ from time import time
 from flask import Flask, Blueprint, request, jsonify, make_response
 import os
 from dotenv import load_dotenv
-from app import create_app
+import app
+# from .app import create_app
 from .elastic import es
 import requests
 
@@ -14,7 +15,7 @@ load_dotenv()
 car_bp = Blueprint("car_bp", __name__)
 carbon_key = os.environ.get("CARBON_INTF_API_KEY")
 
-app = create_app()
+# app = create_app()
 
 # header for carbon api
 HEADER = {'Authorization': f'Bearer {carbon_key}',
@@ -79,7 +80,7 @@ def create_estimated_val():
         print(f"ready to store in es db {request_body}")
 
         verify_name = request_body['user_name']
-        #verify duplication of user name before creating new record
+        # verify duplication of user name before creating new record
         res = es.search(index='user_input', body=json.dumps(
             {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
 
@@ -90,13 +91,13 @@ def create_estimated_val():
     return response.json(), 201
 
 
-@app.route('/')
-def hello():
-    return 'Welcome to Carbon emission server'
+# @app.route('/')
+# def hello():
+#     return 'Welcome to Carbon emission server'
 
 
-if __name__ == '__main__':
-    app.run()
+# if __name__ == '__main__':
+#     # app.run()
 
-    # app.run(port=5000, debug=True)
-    # app.run(host='0.0.0.0', port=5000, debug=True)
+#     # app.run(port=5000, debug=True)
+#     app.run(host='0.0.0.0', port=5000, debug=True)
