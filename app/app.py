@@ -41,12 +41,11 @@ def create_estimated_val():
     print('estimate post request')
 
     # list_makes = get_vehicle_makes()
-    try:
-        list_makes = (requests.get(
-            'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
-    except Exception as e:
-        print(e)
-        return "", 500
+
+    list_makes = (requests.get(
+        'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER))
+    print(list_makes.content)
+    list_makes = list_makes.json()
 
     request_body = request.get_json()
     vehicle_make_id = None
