@@ -8,6 +8,8 @@ from elasticsearch.helpers import bulk
 from elasticsearch_dsl.query import MultiMatch, Match
 import csv
 import json
+# import scipy.io
+
 
 es = Elasticsearch(
     cloud_id=os.environ.get('CLOUD_ID'),
@@ -42,11 +44,10 @@ def create_user_models_index():
 # retrieve current user's model info and compare with others emission and mpg
 
 
-@es_bp.route('/user/models_efficiency/<kw_model>', methods=['PUT'])
-def get_fuel_efficiency(kw_model):
+@es_bp.route('/user/models_efficiency/<kw_model_year>', methods=['PUT'])
+def get_fuel_efficiency(kw_model_year):
     print("inside of get_fuel_efficiency '\n")
 
-  
     # get user's model name, mile, and emission data from user_input index selectively
     # print(es.search(index='user_input', filter_path=[
     #        'hits.hits.user_name', 'hits.hits.emission', 'hits.hits.emission_per_mile']))
@@ -56,12 +57,36 @@ def get_fuel_efficiency(kw_model):
     #     {"query": {"match_phrase": {"emission_per_mile": kw_model}}}))  # exact search
     # print(f" from user input db exact search {req_user['hits']['hits']}")
 
-    # get user's model's MPG value from fuel_economy index
-    req_mpg = es.search(index='model_mpg', body=json.dumps(
-        {"query": {"match_phrase": {"model": kw_model}}}))
-    # serialize Search object to dict to display in console
-    #print(f" from mpg db exact search {req_mpg['hits']['hits']}")
-    #print('mpg response result')
+    kw_model_year = kw_model_year.split('-')
+    print(kw_model_year)
+    model = kw_model_year[0]
+    year = kw_model_year[1]
+
+    query_body = {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "model": model
+                        }
+                    },
+                    {
+                        "match": {
+                            "year": year
+                        }
+                    }
+                ]
+            }
+        }
+    }
+    # two kw in multiple fields --> model and yearfrom model, year fields
+    req_mpg = es.search(index='model_mpg', body=query_body)
+    # one kw in multiple fields--> es.search(index="model_mpg", body={"query": {"multi_match": {"query": kw, "fields": ["name", "description"]}}})
+    # one kw exact search req_user = es.search(index='user_input', body=json.dumps(
+    #     {"query": {"match_phrase": {"emission_per_mile": kw_model}}}))
+
+    print(len(req_mpg['hits']['hits']))
     return jsonify(req_mpg['hits']['hits'])
 
 
@@ -94,3 +119,8 @@ def create_fuel_economy_index_from_csv_file():
             bulk(es, reader, index='model_mpg')
 
         return 'Success'
+
+# @es_bp.route('/user/global_micro', methods=['PUT'])
+# def mat_file():
+#     mat_data = scipy.io.loadmat('app/data/global_micro_2019.mat')
+#     print(type(mat_data))

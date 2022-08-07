@@ -41,8 +41,13 @@ def create_estimated_val():
     print('estimate post request')
 
     # list_makes = get_vehicle_makes()
-    list_makes = (requests.get(
-        'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
+    try:
+        list_makes = (requests.get(
+            'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
+    except Exception as e:
+        print(e)
+        return "", 500
+
     request_body = request.get_json()
     vehicle_make_id = None
     # get vehicle make id by calling api func
@@ -67,14 +72,13 @@ def create_estimated_val():
     request_body['vehicle_model_id'] = vehicle_model_id
 
     response = requests.post(
-        'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body)
+        'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body).json()
 
     if response:
         print(
-            f"response {response.json()['data']['attributes']['carbon_g']}")
+            f"response {response['data']['attributes']['carbon_g']}")
 
-        request_body['emission'] = response.json(
-        )['data']['attributes']['carbon_g']
+        request_body['emission'] = response['data']['attributes']['carbon_g']
         request_body['emission_per_mile'] = (
             int(request_body['emission']) // int(request_body['distance_value']))
         print(f"ready to store in es db {request_body}")
@@ -87,8 +91,8 @@ def create_estimated_val():
         if len(res['hits']['hits']) == 0:
             print("create id when not exists")
             es.index(index='user_input', body=request_body)
-    print(response.json())
-    return response.json(), 201
+    print(response)
+    return response, 201
 
 
 # @app.route('/')
