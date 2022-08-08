@@ -43,9 +43,8 @@ def create_estimated_val():
     # list_makes = get_vehicle_makes()
 
     list_makes = (requests.get(
-        'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER))
-    print(list_makes.content)
-    list_makes = list_makes.json()
+        'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
+    #print(list_makes.content)
 
     request_body = request.get_json()
     vehicle_make_id = None

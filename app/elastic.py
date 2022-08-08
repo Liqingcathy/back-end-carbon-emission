@@ -23,13 +23,14 @@ es_bp = Blueprint("es_bp", __name__)
 # save user's input
 
 
-@es_bp.route('/user/<kw>', methods=['GET'])
-def search_user(kw):
+@es_bp.route('/user/<user_name>', methods=['GET'])
+def search_user(user_name):
     # res = es.search(es, index='user_input',  query=kw)
-    res = Search(using=es,  index='user_input').query("multi_match", query=kw, fields=[
-        'brand_name', 'model_name', 'user_name', 'emission'])
-    print(type(res))
-    return jsonify(res.to_dict())
+    user_emission = es.search(index='user_input', body=json.dumps(
+        {"query": {"match_phrase": {"emission_per_mile": user_name}}}))
+
+    print(user_emission['hits']['hits'])
+    return user_emission['hits']['hits']
 
 # save user's model response
 # @es_bp.route('/user/models', methods=['GET'])
