@@ -57,6 +57,9 @@ def create_estimated_val():
     vehicle_model_id = None
     print(request_body)
     vehicle_model_list = get_vehicle_model_id(vehicle_make_id)
+
+    if not vehicle_model_list:
+        return jsonify("Sorry, We couldn't find your model.", 404)
     for i in range(len(vehicle_model_list)):
         for val in vehicle_model_list[i].values():
             if val['attributes']['name'] == request_body['model_name']:
@@ -91,6 +94,15 @@ def create_estimated_val():
             es.index(index='user_input', body=request_body)
     print(response)
     return response, 201
+
+
+# historical_emission = "https://www.climatewatchdata.org/api/v1/data/historical_emissions"
+# @ car_bp.route('/us_historical_emission', methods=['GET'])
+# def get_us_emission_by_sector():
+#     response = requests.post(url=historical_emission, params={'q': 'requests+language:python'}).json()
+
+#     print(response)
+#     return response
 
 
 # @app.route('/')

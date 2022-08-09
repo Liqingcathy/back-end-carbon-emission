@@ -16,7 +16,7 @@ import os
 search_bp = Blueprint("search_bp", __name__)
 #filter necessary text
 def necessary_text(element):
-    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'a', 'h1', 'h2', 'link']:
+    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'a', 'link']:
         return False
     if isinstance(element, Comment):
         return False

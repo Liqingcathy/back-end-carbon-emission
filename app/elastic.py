@@ -29,7 +29,7 @@ def search_user(user_name):
         {"query": {"match_phrase": {"user_name": user_name}}}))
 
     print(user_emission['hits']['hits'])
-    return user_emission['hits']['hits']
+    return jsonify(user_emission['hits']['hits'])
 
 # save user's model response
 # @es_bp.route('/user/models', methods=['GET'])
