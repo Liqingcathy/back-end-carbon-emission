@@ -21,13 +21,12 @@ es = Elasticsearch(
 es_bp = Blueprint("es_bp", __name__)
 
 # save user's input
-
-
 @es_bp.route('/user/<user_name>', methods=['GET'])
 def search_user(user_name):
+    print(type(user_name))
     # res = es.search(es, index='user_input',  query=kw)
     user_emission = es.search(index='user_input', body=json.dumps(
-        {"query": {"match_phrase": {"emission_per_mile": user_name}}}))
+        {"query": {"match_phrase": {"user_name": user_name}}}))
 
     print(user_emission['hits']['hits'])
     return user_emission['hits']['hits']
@@ -43,12 +42,9 @@ def create_user_models_index():
     return jsonify(res)
 
 # retrieve current user's model info and compare with others emission and mpg
-
-
 @es_bp.route('/user/models_efficiency/<kw_model_year>', methods=['PUT'])
 def get_fuel_efficiency(kw_model_year):
     print("inside of get_fuel_efficiency '\n")
-
     # get user's model name, mile, and emission data from user_input index selectively
     # print(es.search(index='user_input', filter_path=[
     #        'hits.hits.user_name', 'hits.hits.emission', 'hits.hits.emission_per_mile']))
@@ -76,6 +72,11 @@ def get_fuel_efficiency(kw_model_year):
                         "match": {
                             "year": year
                         }
+                    },
+                    {
+                    "match": {
+                            "trany": "Automatic"
+                        }
                     }
                 ]
             }
@@ -91,27 +92,7 @@ def get_fuel_efficiency(kw_model_year):
     return jsonify(req_mpg['hits']['hits'])
 
 
-# #create fuel_economy index for later search
-# @es_bp.route('/user/models/mpg', methods=['GET'])
-# def create_user_models_mpg_index():
-#      if not es.indices.exists(index='fuel_economy'):
-#         res = es.index(index='fuel_economy', document=USER_INPUT)
-#     print(res)
-#     return jsonify(res)
-
-# retrieve model mpg data from database
-# @es_bp.route('/user/models/mpg', methods=['GET'])
-# def user_emission_model_mpg():
-#     print('inside of /user/models/mpg route')
-#     # get_csv()
-#     print('search index=user_name \n')
-#     res = search_mpg_match_all()
-
-#     return jsonify(res['hits']['hits'])
-
 # read csv file and bulk load to elasticsearch with given index=fuel_economy
-
-
 @es_bp.route('/user/models_efficiency', methods=['PUT'])
 def create_fuel_economy_index_from_csv_file():
     with open('app/data/vehicle_fuel_economy.csv') as csv_file:
