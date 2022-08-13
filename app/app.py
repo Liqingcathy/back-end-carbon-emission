@@ -44,7 +44,7 @@ def create_estimated_val():
 
     list_makes = (requests.get(
         'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
-    #print(list_makes.content)
+    # print(list_makes.content)
 
     request_body = request.get_json()
     vehicle_make_id = None
@@ -76,8 +76,7 @@ def create_estimated_val():
         'https://www.carboninterface.com/api/v1/estimates', headers=HEADER, json=request_body).json()
 
     if response:
-        print(
-            f"response {response['data']['attributes']['carbon_g']}")
+        print(f"response {response['data']['attributes']['carbon_g']}")
 
         request_body['emission'] = response['data']['attributes']['carbon_g']
         request_body['emission_per_mile'] = (

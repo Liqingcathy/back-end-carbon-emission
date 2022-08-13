@@ -1,13 +1,17 @@
 from datetime import datetime
 import os
+from typing import Counter
+from attr import field
 import certifi
 from flask import Flask, Blueprint, jsonify
 from elasticsearch import Elasticsearch, RequestsHttpConnection
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Search, A
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl.query import MultiMatch, Match
 import csv
 import json
+
+from requests import request
 # import scipy.io
 
 
@@ -21,6 +25,8 @@ es = Elasticsearch(
 es_bp = Blueprint("es_bp", __name__)
 
 # save user's input
+
+
 @es_bp.route('/user/<user_name>', methods=['GET'])
 def search_user(user_name):
     print(type(user_name))
@@ -42,6 +48,8 @@ def create_user_models_index():
     return jsonify(res)
 
 # retrieve current user's model info and compare with others emission and mpg
+
+
 @es_bp.route('/user/models_efficiency/<kw_model_year>', methods=['PUT'])
 def get_fuel_efficiency(kw_model_year):
     print("inside of get_fuel_efficiency '\n")
@@ -74,7 +82,7 @@ def get_fuel_efficiency(kw_model_year):
                         }
                     },
                     {
-                    "match": {
+                        "match": {
                             "trany": "Automatic"
                         }
                     }
@@ -102,7 +110,113 @@ def create_fuel_economy_index_from_csv_file():
 
         return 'Success'
 
-# @es_bp.route('/user/global_micro', methods=['PUT'])
-# def mat_file():
-#     mat_data = scipy.io.loadmat('app/data/global_micro_2019.mat')
-#     print(type(mat_data))
+
+@es_bp.route('/popular_vehicle_model_search', methods=['GET'])
+def popular_model_search():
+    body_query = {
+        "aggs": {
+            "my_fields": {
+                "terms": {
+                    # "field": "brand_name.keyword",
+                    "field": "model_name.keyword",
+                    "size": 5
+                }
+            }
+        }
+    }
+
+    #s = es.search(index='user_input', body={'query': {'match_all': {}}})
+    # s['hits']['hits'] only returns 10 documents in elasticsearch, instead use dsl
+    #s = Search(using=es, index="user_input")
+    s = es.search(index='user_input', body=body_query)
+    top_5_model = s['aggregations']['my_fields']['buckets']
+    result = []
+    for obj in s['hits']['hits']:
+        for model in top_5_model:
+            if model['key'] in obj['_source']['model_name']:
+                result.append(obj)
+
+    # s.execute()
+    # print(s['hits']['hits'])  # brand name associated with top 3 model name
+    # print(s['aggregations']['my_fields']['buckets'])  # unique top 3 model name
+    # print(result)
+    # return jsonify(s['aggregations']['my_fields']['buckets'])
+    return jsonify(result)
+
+
+@es_bp.route('/popular_vehicle_make_search', methods=['GET'])
+def popular_make_search():
+    body_query = {
+        "aggs": {
+            "my_fields2": {
+                "terms": {
+                    "field": "brand_name.keyword",
+                    "size": 5
+                }
+            }
+        }
+    }
+    s = es.search(index='user_input', body=body_query)
+    top_5_make = s['aggregations']['my_fields2']['buckets']
+    print(top_5_make)
+
+    result = []
+    for obj in s['hits']['hits']:
+        for make in top_5_make:
+            if make['key'] == obj['_source']['brand_name']:
+                # if result.get(make['key']) not in result.values():
+                #     result[make['key']] = [obj]
+                # else:
+                #     result.get(make['key']).append(obj)
+                result.append(obj)
+    print(result)
+    # debug to return mini, frontend return 8 objects, should return
+    return jsonify(result)
+
+# get a specific user's vehicle make name and filter models
+# with similar mpg range, fuel-cost oil consumption
+
+
+@es_bp.route('/same_make_diff_model/<make_kw>', methods=['GET'])
+def same_make_diff_model(make_kw):
+    print(make_kw)  # Toyota-Corolla-28
+
+    splitKW = make_kw.split('-')
+    make, model, mpg = splitKW[0], splitKW[1], str(splitKW[2])
+
+    body_query = {
+        # "size": 5000, #to return full 60 list
+        "query": {
+            "bool": {
+                "must": [
+                    {"match":
+                        {"make": make}},
+                    {"match":
+                        {"combMPGSF": mpg}},
+                ]
+            }
+        },
+        "aggs": {
+            "getModelsWithSameMpg": {
+                "terms": {
+                    "field": "model.keyword",
+                    "size": 20
+                }
+            }
+        }
+    }
+
+    similar_models = es.search(index='model_mpg', body=body_query)
+    # print(similar_models['hits']['hits'])
+    model_list_ten = similar_models['aggregations']['getModelsWithSameMpg']['buckets']
+    print(len(similar_models['hits']['hits']))
+    # print(similar_models['hits']['hits'])
+    print(len(model_list_ten))
+    # print(f"filted 10 model_list with same make, mpg {model_list_ten}")
+
+    return jsonify(similar_models['hits']['hits'])
+    # return jsonify(similar_models['hits']['hits'])
+
+@es_bp.route('/same_model_diff_make_model/<model_kw>', methods=['GET'])
+def same_model_fuel_economy(model_kw):
+    pass
