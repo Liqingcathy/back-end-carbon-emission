@@ -217,6 +217,53 @@ def same_make_diff_model(make_kw):
     return jsonify(similar_models['hits']['hits'])
     # return jsonify(similar_models['hits']['hits'])
 
+# search doc matches same given mpg, and filter all models from different makes, with less oil consume?
+
+# tailpipe CO2 in grams/mile for vs emission permile
+# kw should be model-mpg-emissionpermile
+
+
 @es_bp.route('/same_model_diff_make_model/<model_kw>', methods=['GET'])
 def same_model_fuel_economy(model_kw):
-    pass
+    splitKW = model_kw.split('-')
+    make, model, mpg, emissionPermile = splitKW[0], splitKW[1], str(
+        splitKW[2]), str(splitKW[3])
+
+    body_query = {
+        "size": 30,  # to return full 60 list
+        "query": {
+            "bool": {
+                "must": [
+                    {"match":
+                        {"combMPGSF": mpg}},
+                ],
+                "must_not": [
+                    {
+                        "term": {
+                            "model": model
+                        }
+                    },
+                    {
+                        "term": {
+                            "make": make
+                        }
+                    }
+                ]
+            }
+        },
+        "aggs": {
+            "model_mpg_emission": {
+                "terms": {
+                    "field": "model.keyword",
+                    "size": 30
+                }
+            }
+        }
+    }
+    similar_models = es.search(index='model_mpg', body=body_query)
+    # print(similar_models['hits']['hits'])
+    model_list_ten = similar_models['aggregations']['model_mpg_emission']['buckets']
+    print(len(similar_models['hits']['hits']))
+    print(model_list_ten)
+
+    return jsonify(similar_models['hits']['hits'])

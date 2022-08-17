@@ -83,14 +83,14 @@ def create_estimated_val():
             int(request_body['emission']) // int(request_body['distance_value']))
         print(f"ready to store in es db {request_body}")
 
-        verify_name = request_body['user_name']
+        # verify_name = request_body['user_name']
         # verify duplication of user name before creating new record
-        res = es.search(index='user_input', body=json.dumps(
-            {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
+        # res = es.search(index='user_input', body=json.dumps(
+        #     {"query": {"match_phrase": {"user_name": verify_name}}}))  # exact search
 
-        if len(res['hits']['hits']) == 0:
-            print("create id when not exists")
-            es.index(index='user_input', body=request_body)
+        # if len(res['hits']['hits']) == 0:
+        #     print("create id when not exists")
+        es.index(index='user_input', body=request_body)
     print(response)
     return response, 201
 
