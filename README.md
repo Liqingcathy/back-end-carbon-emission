@@ -1,2 +1,2 @@
 # back-end-carbon-emission
-Capstone Project with Back-end Implementation of Python Flask, ElasticSearch, and Restful APIs
+Capstone Project with Flask, ElasticSearch, and Restful API Back-end Implementation.
