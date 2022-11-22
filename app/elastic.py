@@ -25,8 +25,6 @@ es = Elasticsearch(
 es_bp = Blueprint("es_bp", __name__)
 
 # save user's input
-
-
 @es_bp.route('/user/<user_name>', methods=['GET'])
 def search_user(user_name):
     print(type(user_name))
@@ -39,17 +37,13 @@ def search_user(user_name):
 
 # save user's model response
 # @es_bp.route('/user/models', methods=['GET'])
-
-
 def create_user_models_index():
     if not es.indices.exists(index='user_models'):
         res = es.index(index='user_models', document={})
     print(res)
     return jsonify(res)
 
-# retrieve current user's model info and compare with others emission and mpg
-
-
+# retrieve current user's model info and compare with others emission and mp
 @es_bp.route('/user/models_efficiency/<kw_model_year>', methods=['PUT'])
 def get_fuel_efficiency(kw_model_year):
     print("inside of get_fuel_efficiency '\n")
@@ -137,7 +131,6 @@ def popular_model_search():
                 result.append(obj)
 
     # s.execute()
-    # print(s['hits']['hits'])  # brand name associated with top 3 model name
     # print(s['aggregations']['my_fields']['buckets'])  # unique top 3 model name
     return jsonify(result)
 
