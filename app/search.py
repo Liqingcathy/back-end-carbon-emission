@@ -1,22 +1,22 @@
-import ssl
+
 from asyncio.log import logger
 from elasticsearch import Elasticsearch, TransportError
 from flask import Flask, Blueprint, jsonify
 from requests import request
-import requests
 from bs4 import BeautifulSoup, Comment
 import urllib.request
 from elasticsearch_dsl import Search
 from .elastic import es
 from elasticsearch.helpers import bulk
+import requests
+import ssl
 import re
 import os
 
 
 search_bp = Blueprint("search_bp", __name__)
+
 # filter necessary text
-
-
 def necessary_text(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'a', 'link']:
         return False
@@ -53,15 +53,10 @@ def web_spider():
 
         records.append({title: a_tag})
         text_res.append({'title': title, 'url': a_tag, 'content': text})
-    # print(text_res)
     # exit()
     return text_res
 
-# print(spider())
-
 # create epa_info index and bulk save all title/url/content to elasticsearch db
-
-
 @search_bp.route('/green_vehicle', methods=['PUT'])
 def create_spider_index():
     data_list = web_spider()
@@ -71,8 +66,6 @@ def create_spider_index():
     return jsonify(res[1])
 
 # get request to server from db to return search query match from each content
-
-
 @search_bp.route('/green_vehicle/<kw>', methods=['GET'])
 def search_word(kw):
     print(f"kw {kw}")
@@ -87,6 +80,7 @@ def search_word(kw):
             }
         },
 
+        #Trial for suggest keyword feature
         # "suggest": {
         #     "sug_1": {
         #         "text": kw,
@@ -101,6 +95,8 @@ def search_word(kw):
         #         }
         #     }
         # },
+        
+        #<em> highlight didn't work on UI
         "highlight": {
             "pre_tags": ["<em>"],
             "post_tags": ["</em>"],
@@ -119,14 +115,14 @@ def search_word(kw):
         }
     }
 
+    #Comment for record
     # q = Search(using=es,  index='epa_info').query("match", content=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
-    # keword query matches title or content or url
-    q = es.search(index='epa_info', body=body)
+    # keyword query matches title or content or url
     #q = Search(using=es,  index='epa_info').query("multi_match", query=kw, fields=['content', 'title', 'url'])
     # underhood query: {'query': {'match': {'title': keyword}}}
-    # q = q.highlight('title').highlight('content')
-    # print(q)  # serialize Search object to dict to display in console
+    # q = q.highlight('title').highlight('content') #not working
     # res = q.execute()
+    
+    q = es.search(index='epa_info', body=body)
     all_hits = q['hits']['hits']
-    print(f"search res_match_hit_length {len(all_hits)}")
     return (q)
