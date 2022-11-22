@@ -1,18 +1,17 @@
 from datetime import datetime
-import os
-from typing import Counter
-from attr import field
-import certifi
 from flask import Flask, Blueprint, jsonify
+from requests import request
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch_dsl import Search, A
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl.query import MultiMatch, Match
+from typing import Counter
+from attr import field
+import certifi
 import csv
 import json
+import os
 
-from requests import request
-# import scipy.io
 
 
 es = Elasticsearch(
