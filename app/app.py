@@ -1,13 +1,12 @@
-
+import app
 import json
+import requests
 from time import time
 from flask import Flask, Blueprint, request, jsonify, make_response
-import os
-from dotenv import load_dotenv
-import app
-# from .app import create_app
 from .elastic import es
-import requests
+from dotenv import load_dotenv
+import os
+
 
 load_dotenv()
 
@@ -22,30 +21,19 @@ HEADER = {'Authorization': f'Bearer {carbon_key}',
           'Content-Type': 'application/json'}
 
 # get model id to request estimation result
-
-
 @ car_bp.route('/vehicle_makes/<id>/vehicle_models', methods=['GET'])
 def get_vehicle_model_id(id):
     '''data: vehicle_model_id,vehicle_model_name, vehicle_brand_name(limited to 4), year '''
-    print('inside get model id func')
     url = f"https://www.carboninterface.com/api/v1/vehicle_makes/{id}/vehicle_models"
     model_list = requests.get(url, headers=HEADER).json()
 
-    print(len(model_list))
     return model_list
+
 # calls from frontend to create user's estimation result
-
-
 @ car_bp.route('/estimate', methods=['POST', 'GET'])
 def create_estimated_val():
-    print('estimate post request')
-
-    # list_makes = get_vehicle_makes()
-
     list_makes = (requests.get(
         'https://www.carboninterface.com/api/v1/vehicle_makes', headers=HEADER)).json()
-    # print(list_makes.content)
-
     request_body = request.get_json()
     vehicle_make_id = None
     # get vehicle make id by calling api func
@@ -55,7 +43,6 @@ def create_estimated_val():
                 vehicle_make_id = val['id']
 
     vehicle_model_id = None
-    print(request_body)
     vehicle_model_list = get_vehicle_model_id(vehicle_make_id)
 
     if not vehicle_model_list:
@@ -69,7 +56,6 @@ def create_estimated_val():
                     #vehicle_name = val['attributes']['name']
                     #print(f'model and id match? {vehicle_model_id} {vehicle_name}')
 
-    print(f"vehicle_model_id {vehicle_model_id}")
     request_body['vehicle_model_id'] = vehicle_model_id
 
     response = requests.post(
@@ -81,7 +67,6 @@ def create_estimated_val():
         request_body['emission'] = response['data']['attributes']['carbon_g']
         request_body['emission_per_mile'] = (
             int(request_body['emission']) // int(request_body['distance_value']))
-        print(f"ready to store in es db {request_body}")
 
         # verify_name = request_body['user_name']
         # verify duplication of user name before creating new record
@@ -91,17 +76,7 @@ def create_estimated_val():
         # if len(res['hits']['hits']) == 0:
         #     print("create id when not exists")
         es.index(index='user_input', body=request_body)
-    print(response)
     return response, 201
-
-
-# historical_emission = "https://www.climatewatchdata.org/api/v1/data/historical_emissions"
-# @ car_bp.route('/us_historical_emission', methods=['GET'])
-# def get_us_emission_by_sector():
-#     response = requests.post(url=historical_emission, params={'q': 'requests+language:python'}).json()
-
-#     print(response)
-#     return response
 
 
 # @app.route('/')
