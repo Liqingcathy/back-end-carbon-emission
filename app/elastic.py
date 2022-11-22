@@ -139,8 +139,6 @@ def popular_model_search():
     # s.execute()
     # print(s['hits']['hits'])  # brand name associated with top 3 model name
     # print(s['aggregations']['my_fields']['buckets'])  # unique top 3 model name
-    # print(result)
-    # return jsonify(s['aggregations']['my_fields']['buckets'])
     return jsonify(result)
 
 
@@ -169,14 +167,10 @@ def popular_make_search():
                 # else:
                 #     result.get(make['key']).append(obj)
                 result.append(obj)
-    print(result)
-    # debug to return mini, frontend return 8 objects, should return
     return jsonify(result)
 
 # get a specific user's vehicle make name and filter models
 # with similar mpg range, fuel-cost oil consumption
-
-
 @es_bp.route('/same_make_diff_model/<make_kw>', methods=['GET'])
 def same_make_diff_model(make_kw):
     print(make_kw)  # Toyota-Corolla-28
@@ -207,22 +201,14 @@ def same_make_diff_model(make_kw):
     }
 
     similar_models = es.search(index='model_mpg', body=body_query)
-    # print(similar_models['hits']['hits'])
     model_list_ten = similar_models['aggregations']['getModelsWithSameMpg']['buckets']
-    print(len(similar_models['hits']['hits']))
-    # print(similar_models['hits']['hits'])
-    print(len(model_list_ten))
     # print(f"filted 10 model_list with same make, mpg {model_list_ten}")
 
     return jsonify(similar_models['hits']['hits'])
-    # return jsonify(similar_models['hits']['hits'])
 
 # search doc matches same given mpg, and filter all models from different makes, with less oil consume?
-
 # tailpipe CO2 in grams/mile for vs emission permile
 # kw should be model-mpg-emissionpermile
-
-
 @es_bp.route('/same_model_diff_make_model/<model_kw>', methods=['GET'])
 def same_model_fuel_economy(model_kw):
     splitKW = model_kw.split('-')
@@ -261,9 +247,7 @@ def same_model_fuel_economy(model_kw):
         }
     }
     similar_models = es.search(index='model_mpg', body=body_query)
-    # print(similar_models['hits']['hits'])
     model_list_ten = similar_models['aggregations']['model_mpg_emission']['buckets']
-    print(len(similar_models['hits']['hits']))
     print(model_list_ten)
 
     return jsonify(similar_models['hits']['hits'])
