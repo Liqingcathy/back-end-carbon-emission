@@ -45,16 +45,6 @@ def create_user_models_index():
 # retrieve current user's model info and compare with others emission and mp
 @es_bp.route('/user/models_efficiency/<kw_model_year>', methods=['PUT'])
 def get_fuel_efficiency(kw_model_year):
-    print("inside of get_fuel_efficiency '\n")
-    # get user's model name, mile, and emission data from user_input index selectively
-    # print(es.search(index='user_input', filter_path=[
-    #        'hits.hits.user_name', 'hits.hits.emission', 'hits.hits.emission_per_mile']))
-    # print(es.search(index='user_input', filter_path=['hits.hits._*'])) get all user's all field
-
-    # req_user = es.search(index='user_input', body=json.dumps(
-    #     {"query": {"match_phrase": {"emission_per_mile": kw_model}}}))  # exact search
-    # print(f" from user input db exact search {req_user['hits']['hits']}")
-
     kw_model_year = kw_model_year.split('-')
     print(kw_model_year)
     model = kw_model_year[0]
@@ -85,11 +75,6 @@ def get_fuel_efficiency(kw_model_year):
     }
     # two kw in multiple fields --> model and yearfrom model, year fields
     req_mpg = es.search(index='model_mpg', body=query_body)
-    # one kw in multiple fields--> es.search(index="model_mpg", body={"query": {"multi_match": {"query": kw, "fields": ["name", "description"]}}})
-    # one kw exact search req_user = es.search(index='user_input', body=json.dumps(
-    #     {"query": {"match_phrase": {"emission_per_mile": kw_model}}}))
-
-    print(len(req_mpg['hits']['hits']))
     return jsonify(req_mpg['hits']['hits'])
 
 
@@ -118,9 +103,6 @@ def popular_model_search():
         }
     }
 
-    #s = es.search(index='user_input', body={'query': {'match_all': {}}})
-    # s['hits']['hits'] only returns 10 documents in elasticsearch, instead use dsl
-    #s = Search(using=es, index="user_input")
     s = es.search(index='user_input', body=body_query)
     top_5_model = s['aggregations']['my_fields']['buckets']
     result = []
@@ -129,7 +111,6 @@ def popular_model_search():
             if model['key'] in obj['_source']['model_name']:
                 result.append(obj)
 
-    # s.execute()
     # print(s['aggregations']['my_fields']['buckets'])  # unique top 3 model name
     return jsonify(result)
 
@@ -148,16 +129,11 @@ def popular_make_search():
     }
     s = es.search(index='user_input', body=body_query)
     top_5_make = s['aggregations']['my_fields2']['buckets']
-    print(top_5_make)
 
     result = []
     for obj in s['hits']['hits']:
         for make in top_5_make:
             if make['key'] == obj['_source']['brand_name']:
-                # if result.get(make['key']) not in result.values():
-                #     result[make['key']] = [obj]
-                # else:
-                #     result.get(make['key']).append(obj)
                 result.append(obj)
     return jsonify(result)
 
@@ -165,8 +141,6 @@ def popular_make_search():
 # with similar mpg range, fuel-cost oil consumption
 @es_bp.route('/same_make_diff_model/<make_kw>', methods=['GET'])
 def same_make_diff_model(make_kw):
-    print(make_kw)  # Toyota-Corolla-28
-
     splitKW = make_kw.split('-')
     make, model, mpg = splitKW[0], splitKW[1], str(splitKW[2])
 
@@ -194,11 +168,9 @@ def same_make_diff_model(make_kw):
 
     similar_models = es.search(index='model_mpg', body=body_query)
     model_list_ten = similar_models['aggregations']['getModelsWithSameMpg']['buckets']
-    # print(f"filted 10 model_list with same make, mpg {model_list_ten}")
-
     return jsonify(similar_models['hits']['hits'])
 
-# search doc matches same given mpg, and filter all models from different makes, with less oil consume?
+# search doc matches same given mpg, and filter all models from different makes, with less oil consume
 # tailpipe CO2 in grams/mile for vs emission permile
 # kw should be model-mpg-emissionpermile
 @es_bp.route('/same_model_diff_make_model/<model_kw>', methods=['GET'])
@@ -240,6 +212,4 @@ def same_model_fuel_economy(model_kw):
     }
     similar_models = es.search(index='model_mpg', body=body_query)
     model_list_ten = similar_models['aggregations']['model_mpg_emission']['buckets']
-    print(model_list_ten)
-
     return jsonify(similar_models['hits']['hits'])
