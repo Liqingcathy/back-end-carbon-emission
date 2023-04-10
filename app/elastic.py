@@ -23,30 +23,22 @@ es = Elasticsearch(
 
 es_bp = Blueprint("es_bp", __name__)
 
-# save user's input
 @es_bp.route('/user/<user_name>', methods=['GET'])
 def search_user(user_name):
-    print(type(user_name))
-    # res = es.search(es, index='user_input',  query=kw)
     user_emission = es.search(index='user_input', body=json.dumps(
         {"query": {"match_phrase": {"user_name": user_name}}}))
-
-    print(user_emission['hits']['hits'])
     return jsonify(user_emission['hits']['hits'])
 
-# save user's model response
 # @es_bp.route('/user/models', methods=['GET'])
 def create_user_models_index():
     if not es.indices.exists(index='user_models'):
         res = es.index(index='user_models', document={})
-    print(res)
     return jsonify(res)
 
 # retrieve current user's model info and compare with others emission and mp
 @es_bp.route('/user/models_efficiency/<kw_model_year>', methods=['PUT'])
 def get_fuel_efficiency(kw_model_year):
     kw_model_year = kw_model_year.split('-')
-    print(kw_model_year)
     model = kw_model_year[0]
     year = kw_model_year[1]
 
@@ -73,12 +65,11 @@ def get_fuel_efficiency(kw_model_year):
             }
         }
     }
-    # two kw in multiple fields --> model and yearfrom model, year fields
+    # two kw in multiple fields --> model and year from model, and year fields
     req_mpg = es.search(index='model_mpg', body=query_body)
     return jsonify(req_mpg['hits']['hits'])
 
 
-# read csv file and bulk load to elasticsearch with given index=fuel_economy
 @es_bp.route('/user/models_efficiency', methods=['PUT'])
 def create_fuel_economy_index_from_csv_file():
     with open('app/data/vehicle_fuel_economy.csv') as csv_file:
@@ -111,7 +102,7 @@ def popular_model_search():
             if model['key'] in obj['_source']['model_name']:
                 result.append(obj)
 
-    # print(s['aggregations']['my_fields']['buckets'])  # unique top 3 model name
+    #s['aggregations']['my_fields']['buckets']) unique top 3 model name
     return jsonify(result)
 
 
@@ -145,7 +136,7 @@ def same_make_diff_model(make_kw):
     make, model, mpg = splitKW[0], splitKW[1], str(splitKW[2])
 
     body_query = {
-        # "size": 5000, #to return full 60 list
+        # "size": 5000, to return full 60 list
         "query": {
             "bool": {
                 "must": [
@@ -172,7 +163,7 @@ def same_make_diff_model(make_kw):
 
 # search doc matches same given mpg, and filter all models from different makes, with less oil consume
 # tailpipe CO2 in grams/mile for vs emission permile
-# kw should be model-mpg-emissionpermile
+# kw provided by UI should be model-mpg-emissionpermile
 @es_bp.route('/same_model_diff_make_model/<model_kw>', methods=['GET'])
 def same_model_fuel_economy(model_kw):
     splitKW = model_kw.split('-')
