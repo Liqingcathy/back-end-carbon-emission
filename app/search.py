@@ -16,7 +16,6 @@ import os
 
 search_bp = Blueprint("search_bp", __name__)
 
-# filter necessary text
 def necessary_text(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]', 'a', 'link']:
         return False
@@ -53,7 +52,6 @@ def web_spider():
 
         records.append({title: a_tag})
         text_res.append({'title': title, 'url': a_tag, 'content': text})
-    # exit()
     return text_res
 
 # create epa_info index and bulk save all title/url/content to elasticsearch db
@@ -62,14 +60,12 @@ def create_spider_index():
     data_list = web_spider()
     if not es.indices.exists(index='epa_info'):
         res = bulk(es, data_list, index='epa_info')
-    # bulk save list of JSON dict type fields to es db
+    
     return jsonify(res[1])
 
 # get request to server from db to return search query match from each content
 @search_bp.route('/green_vehicle/<kw>', methods=['GET'])
 def search_word(kw):
-    print(f"kw {kw}")
-
     body = {
         "query": {
             "query_string": {
@@ -114,6 +110,11 @@ def search_word(kw):
             }
         }
     }
+    
+    q = es.search(index='epa_info', body=body)
+    all_hits = q['hits']['hits']
+    return (q)
+
 
     #Comment for record
     # q = Search(using=es,  index='epa_info').query("match", content=kw) #.highlight("fields.title",fragment_size=50) # can do more .agg
@@ -122,7 +123,3 @@ def search_word(kw):
     # underhood query: {'query': {'match': {'title': keyword}}}
     # q = q.highlight('title').highlight('content') #not working
     # res = q.execute()
-    
-    q = es.search(index='epa_info', body=body)
-    all_hits = q['hits']['hits']
-    return (q)
